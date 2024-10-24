@@ -15,14 +15,15 @@ namespace SAPPromotion
     {
         readonly string containerName = Properties.Settings.Default.ContainerName;
         readonly string blobDirectoryPrefix = Properties.Settings.Default.BlobDirectoryPrefix;
+        readonly string blobDirectoryCustomerPromoPrefix = Properties.Settings.Default.BlobDirectoryCustomerPromoPrefix;
         readonly string destblobDirectoryPrefix = Properties.Settings.Default.DestDirectory;
         static IConfiguration _configuration;
         readonly SAPPromotionData promotionData;
         public SAPPromotionJsonData(IConfiguration configuration)
-            {
+        {
             _configuration = configuration;
             promotionData = new SAPPromotionData(_configuration);
-            }
+        }
 
         public void LoadPromotionData()
         {
@@ -30,18 +31,19 @@ namespace SAPPromotion
             {
 
                 List<SAPBlobEntity> blobList = new List<SAPBlobEntity>();
+                List<SAPBlobEntity> CustomerPromoBlobList = new List<SAPBlobEntity>();
                 var storageKey = _configuration["StorageKey"];
 
                 var storageAccount = CloudStorageAccount.Parse(storageKey);
                 var myClient = storageAccount.CreateCloudBlobClient();
                 var container = myClient.GetContainerReference(containerName);
-
+               
                 var list = container.ListBlobs().OfType<CloudBlobDirectory>().ToList();
                 var blobListDirectory = list[0].ListBlobs().OfType<CloudBlobDirectory>().ToList();
 
                 foreach (var blobDirectory in blobListDirectory)
                 {
-                    if (blobDirectory.Prefix == blobDirectoryPrefix)
+                    if (blobDirectory.Prefix == blobDirectoryPrefix || blobDirectory.Prefix == blobDirectoryCustomerPromoPrefix )
                     {
                         foreach (var blobFile in blobDirectory.ListBlobs().OfType<CloudBlockBlob>())
                         {
@@ -58,10 +60,26 @@ namespace SAPPromotion
                             blobDetails.FileData = blockBlob.DownloadTextAsync().Result;
                             blobDetails.BlobName = blobFile.Name;
 
-                            blobList.Add(blobDetails);
+                            if(blobDirectory.Prefix == blobDirectoryPrefix)
+                            {
+                                blobList.Add(blobDetails);
+                            }
+                            else
+                            {
+                                CustomerPromoBlobList.Add(blobDetails);
+                            }
+                           // blobList.Add(blobDetails);
                         }
 
-                        blobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
+                        if(blobList !=  null)
+                        {
+                            blobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
+                        }
+
+                        if(CustomerPromoBlobList != null)
+                        {
+                            CustomerPromoBlobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
+                        }  
                     }
                 }
 
@@ -69,6 +87,11 @@ namespace SAPPromotion
                 {
                     CheckRequiredFields(blobDetails, container);
                 }
+
+                foreach (var blobDetails in CustomerPromoBlobList)
+                {
+                    CheckCustomerPromoRequiredFields(blobDetails, container);
+                }             
             }
             catch (StorageException ex)
             {
@@ -78,8 +101,122 @@ namespace SAPPromotion
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "Promotion";
+                errorLog.ErrorMessage = ex.Message;
+                promotionData.SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, ex.Message);
+            }
         }
+
+        public void CheckCustomerPromoRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
+        {
+            try
+            {
+                List<string> errors = new List<string>();
+                if (string.IsNullOrEmpty(blobDetails.FileData))
+                {
+                    blobDetails.Status = "Error";
+                    var errorLog = new SAPErrorLogEntity();
+                    errorLog.PipeLineName = "CustomerPromotion";
+                    errorLog.FileName = blobDetails.FileName;
+                    errorLog.ErrorMessage = "File is empty";
+                    promotionData.SaveErrorLogData(errorLog);
+                    Logger logger = new Logger(_configuration);
+                    logger.ErrorLogData(null, "File is empty");
+                }
+                else
+                {
+                    CustomerPromotionJsonEntity customer_promotionJsonEntities = JsonConvert.DeserializeObject<CustomerPromotionJsonEntity>(blobDetails.FileData, new JsonSerializerSettings
+                    {
+                        Error = delegate (object sender, ErrorEventArgs args)
+                        {
+                                errors.Add(args.ErrorContext.Error.Message);
+                                args.ErrorContext.Handled = true;
+
+                        },
+                        Converters = { new IsoDateTimeConverter()}
+                     });
+
+                    Dictionary<string, int> returnData = new Dictionary<string, int>();
+                    if (customer_promotionJsonEntities == null)
+                    {
+                        returnData.Add("CustomerPromotion", 0);
+                        var errorLog = new SAPErrorLogEntity();
+                        errorLog.PipeLineName = "CustomerPromotion";
+                        errorLog.FileName = blobDetails.FileName;
+                        errorLog.ErrorMessage = errors[0];
+                        //SaveErrorLogData(errorLog);
+                        Logger logger = new Logger(_configuration);
+                        logger.ErrorLogData(null, errors[0]);
+                    }
+                    else
+                    {
+                        foreach (var payload in customer_promotionJsonEntities.payload)
+                        {
+                            if (payload.customerC == null)
+                            {
+                                returnData.Add("CustomerNumber is null", 0);
+                            }
+                            else if (payload.dealNoC == null)
+                            {
+                                returnData.Add("PromotionID is null", 0);
+                            }
+                            else
+                            {
+                                var dataTable = new DataTable();
+                                dataTable.Columns.Add("PromotionID");
+                                dataTable.Columns.Add("CustomerNumber");
+                                dataTable.Columns.Add("CustomerGrouping");
+                                
+                                dataTable.Rows.Add(payload.dealNoC, payload.customerC, null);
+                                        
+                                dataTable.AcceptChanges();
+                                if (dataTable.Rows.Count > 0)
+                                {
+                                    var return_CustomerPromo = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
+                                    returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
+                                }                              
+                            }
+                        }
+                    }
+
+                    foreach (var returnvalue in returnData)
+                    {
+                        if (returnvalue.Value == 0)
+                        {
+                            blobDetails.Status = "Error";
+                            var errorLog2 = new SAPErrorLogEntity();
+                            errorLog2.PipeLineName = "CustomerPromotion";
+                            errorLog2.FileName = blobDetails.FileName;
+                            errorLog2.ParentNodeName = returnvalue.Key;
+                            //SaveErrorLogData(errorLog2);
+                            break;
+                        }
+                        else
+                        {
+                            blobDetails.Status = "Success";
+                        }
+                    }
+                }
+                var destDirectory = destblobDirectoryPrefix + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
+                MoveFile(blobDetails, container, destDirectory);
+            }
+            catch (Exception ex)
+            {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "CustomerPromotion";
+                errorLog.ParentNodeName = "CheckCustomerPromoRequiredFields";
+                errorLog.ErrorMessage = ex.Message;
+                promotionData.SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, errorLog.ErrorMessage);
+            }
+         }
 
         public void CheckRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
         {
@@ -316,7 +453,7 @@ namespace SAPPromotion
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, errorLog.ErrorMessage);
-                }
+            }
         }
 
         public void MoveFile(SAPBlobEntity blob, CloudBlobContainer destContainer, string destDirectory)

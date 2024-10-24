@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 
 namespace SAPPromotion
     {
@@ -30,8 +31,8 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@PromotionCategory", promotionMasterDetailsdata.PromotionCategory);
                 cmd.Parameters.AddWithValue("@PromotionCalculationType", promotionMasterDetailsdata.PromotionCalculationType);
                 cmd.Parameters.AddWithValue("@ConditionType", promotionMasterDetailsdata.ConditionType);
-                cmd.Parameters.AddWithValue("@AgreementValidToDate", promotionMasterDetailsdata.AgreementValidToDate);
-                cmd.Parameters.AddWithValue("@AgreementValidFromDate", promotionMasterDetailsdata.AgreementValidFromDate);
+                cmd.Parameters.AddWithValue("@AgreementValidToDate", DateTime.ParseExact(promotionMasterDetailsdata.AgreementValidToDate,"yyyy-MM-dd",CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@AgreementValidFromDate", DateTime.ParseExact(promotionMasterDetailsdata.AgreementValidFromDate, "yyyy-MM-dd", CultureInfo.InvariantCulture));             
                 cmd.Parameters.AddWithValue("@PromoMaintenanceSource", promotionMasterDetailsdata.PromoMaintenanceSource);
                 cmd.Parameters.AddWithValue("@CustAssortmentHandling", promotionMasterDetailsdata.CustAssortmentHandling);
                 cmd.Parameters.AddWithValue("@CustomerInHierarchy", promotionMasterDetailsdata.CustomerInHierarchy);
@@ -104,6 +105,7 @@ namespace SAPPromotion
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();
+                
                 int k = cmd.ExecuteNonQuery();
                 con.Close();
                 if (k != 0)

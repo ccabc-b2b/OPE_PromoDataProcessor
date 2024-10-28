@@ -17,5 +17,8 @@
     <Setting Name="BlobDirectoryCustomerPromoPrefix" Type="System.String" Scope="Application">
       <Value Profile="(Default)">source/customer-promotion/</Value>
     </Setting>
+    <Setting Name="CustomerPromoDestDirectory" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">source/process/customer-promotion/</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

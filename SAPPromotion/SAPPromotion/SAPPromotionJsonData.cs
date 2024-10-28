@@ -17,6 +17,7 @@ namespace SAPPromotion
         readonly string blobDirectoryPrefix = Properties.Settings.Default.BlobDirectoryPrefix;
         readonly string blobDirectoryCustomerPromoPrefix = Properties.Settings.Default.BlobDirectoryCustomerPromoPrefix;
         readonly string destblobDirectoryPrefix = Properties.Settings.Default.DestDirectory;
+        readonly string customerPromoDestDirectoryPrefix = Properties.Settings.Default.CustomerPromoDestDirectory;
         static IConfiguration _configuration;
         readonly SAPPromotionData promotionData;
         public SAPPromotionJsonData(IConfiguration configuration)
@@ -204,7 +205,7 @@ namespace SAPPromotion
                     }
                 }
                 var destDirectory = destblobDirectoryPrefix + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
-                MoveFile(blobDetails, container, destDirectory);
+                MoveFile(blobDetails, container, customerPromoDestDirectoryPrefix);
             }
             catch (Exception ex)
             {
@@ -329,52 +330,9 @@ namespace SAPPromotion
                                                 }
                                             }
                                         }
-
                                     }
 
-                                    if (CUGRHD != null)
-                                    {
-                                        if (CUGRHD.Count != 0)
-                                        {
-                                            foreach (var dataCUGRHD in CUGRHD)
-                                            {
-                                                //if (!string.IsNullOrEmpty(dataCUGRHD.CustomerGrouping))
-                                                //{
-                                                //    countCUGRHD++;
-                                                //    dataCUGRHD.PromotionID = prodhdr.PromotionID;
-                                                //    var return_CUGRHD = promotionData.SaveCustomerGroupPromotionsdata(dataCUGRHD);
-                                                //    returnData.Add("CUGRHD" + countCUGRHD, return_CUGRHD);
-                                                if (dataCUGRHD.CustomerNumber != null)
-                                                {
-                                                    if (dataCUGRHD.CustomerNumber.Count != 0)
-                                                    {
-
-                                                        var listCustomerPromotionDetails = new List<SAPCustomerPromotionDetailsEntity>();
-                                                        var dataTable = new DataTable();
-                                                        dataTable.Columns.Add("PromotionID");
-                                                        dataTable.Columns.Add("CustomerNumber");
-                                                        dataTable.Columns.Add("CustomerGrouping");
-                                                        foreach (var dataCUGRIN in dataCUGRHD.CustomerNumber)
-                                                        {
-                                                            if (!string.IsNullOrEmpty(dataCUGRIN))
-                                                            {
-                                                                dataTable.Rows.Add(prodhdr.PromotionID, dataCUGRIN, dataCUGRHD.CustomerGrouping);
-                                                            }
-                                                        }
-                                                        dataTable.AcceptChanges();
-                                                        if (dataTable.Rows.Count != 0)
-                                                        {
-                                                            var return_CUGRIN = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
-                                                            returnData.Add("CUGRIN" + countCUGRIN, return_CUGRIN);
-                                                            countCUGRIN++;
-                                                        }
-                                                    }
-                                                }
-                                                //}
-
-                                            }
-                                        }
-                                    }
+                                   
 
                                     //not complete
                                     //if (MAGRHD != null)

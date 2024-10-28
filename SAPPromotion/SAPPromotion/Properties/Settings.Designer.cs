@@ -67,5 +67,14 @@ namespace SAPPromotion.Properties {
                 return ((string)(this["BlobDirectoryCustomerPromoPrefix"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("source/process/customer-promotion/")]
+        public string CustomerPromoDestDirectory {
+            get {
+                return ((string)(this["CustomerPromoDestDirectory"]));
+            }
+        }
     }
 }

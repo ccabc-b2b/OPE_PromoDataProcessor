@@ -142,8 +142,23 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@RequirementValue", promotionRequirementDetailsdata.RequirementValue);
                 cmd.Parameters.AddWithValue("@FromQTY", Convert.ToInt32(promotionRequirementDetailsdata.FromQTY));
                 cmd.Parameters.AddWithValue("@ToQTY", Convert.ToInt32(promotionRequirementDetailsdata.ToQTY));
-                cmd.Parameters.AddWithValue("@ActiveFrom", DateTime.ParseExact(promotionRequirementDetailsdata.ActiveFrom, "yyyy-MM-dd", CultureInfo.InvariantCulture));
-                cmd.Parameters.AddWithValue("@ActiveTo", DateTime.ParseExact(promotionRequirementDetailsdata.ActiveTo, "yyyy-MM-dd", CultureInfo.InvariantCulture));
+                DateTime dateTime;
+                if (DateTime.TryParseExact(promotionRequirementDetailsdata.ActiveFrom , "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime))
+                {
+                    cmd.Parameters.AddWithValue("@ActiveFrom", dateTime );
+                }
+                else
+                {
+                    cmd.Parameters.AddWithValue("@ActiveFrom", "" );
+                }
+                if (DateTime.TryParseExact(promotionRequirementDetailsdata.ActiveTo, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime))
+                {
+                    cmd.Parameters.AddWithValue("@ActiveTo", dateTime);
+                }
+                else
+                {
+                    cmd.Parameters.AddWithValue("@ActiveTo", "");
+                }
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();

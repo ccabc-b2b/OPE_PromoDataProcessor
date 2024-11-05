@@ -15,14 +15,16 @@ namespace SAPPromotion
     {
         readonly string containerName = Properties.Settings.Default.ContainerName;
         readonly string blobDirectoryPrefix = Properties.Settings.Default.BlobDirectoryPrefix;
+        readonly string blobDirectoryCustomerPromoPrefix = Properties.Settings.Default.BlobDirectoryCustomerPromoPrefix;
         readonly string destblobDirectoryPrefix = Properties.Settings.Default.DestDirectory;
+        readonly string customerPromoDestDirectoryPrefix = Properties.Settings.Default.CustomerPromoDestDirectory;
         static IConfiguration _configuration;
         readonly SAPPromotionData promotionData;
         public SAPPromotionJsonData(IConfiguration configuration)
-            {
+        {
             _configuration = configuration;
             promotionData = new SAPPromotionData(_configuration);
-            }
+        }
 
         public void LoadPromotionData()
         {
@@ -30,18 +32,19 @@ namespace SAPPromotion
             {
 
                 List<SAPBlobEntity> blobList = new List<SAPBlobEntity>();
+                List<SAPBlobEntity> CustomerPromoBlobList = new List<SAPBlobEntity>();
                 var storageKey = _configuration["StorageKey"];
 
                 var storageAccount = CloudStorageAccount.Parse(storageKey);
                 var myClient = storageAccount.CreateCloudBlobClient();
                 var container = myClient.GetContainerReference(containerName);
-
+               
                 var list = container.ListBlobs().OfType<CloudBlobDirectory>().ToList();
                 var blobListDirectory = list[0].ListBlobs().OfType<CloudBlobDirectory>().ToList();
 
                 foreach (var blobDirectory in blobListDirectory)
                 {
-                    if (blobDirectory.Prefix == blobDirectoryPrefix)
+                    if (blobDirectory.Prefix == blobDirectoryPrefix || blobDirectory.Prefix == blobDirectoryCustomerPromoPrefix )
                     {
                         foreach (var blobFile in blobDirectory.ListBlobs().OfType<CloudBlockBlob>())
                         {
@@ -58,10 +61,26 @@ namespace SAPPromotion
                             blobDetails.FileData = blockBlob.DownloadTextAsync().Result;
                             blobDetails.BlobName = blobFile.Name;
 
-                            blobList.Add(blobDetails);
+                            if(blobDirectory.Prefix == blobDirectoryPrefix)
+                            {
+                                blobList.Add(blobDetails);
+                            }
+                            else
+                            {
+                                CustomerPromoBlobList.Add(blobDetails);
+                            }
+                           // blobList.Add(blobDetails);
                         }
 
-                        blobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
+                        if(blobList !=  null)
+                        {
+                            blobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
+                        }
+
+                        if(CustomerPromoBlobList != null)
+                        {
+                            CustomerPromoBlobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
+                        }  
                     }
                 }
 
@@ -69,6 +88,11 @@ namespace SAPPromotion
                 {
                     CheckRequiredFields(blobDetails, container);
                 }
+
+                foreach (var blobDetails in CustomerPromoBlobList)
+                {
+                    CheckCustomerPromoRequiredFields(blobDetails, container);
+                }             
             }
             catch (StorageException ex)
             {
@@ -78,8 +102,125 @@ namespace SAPPromotion
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "Promotion";
+                errorLog.ErrorMessage = ex.Message;
+                promotionData.SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, ex.Message);
+            }
         }
+
+        public void CheckCustomerPromoRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
+        {
+            try
+            {
+                List<string> errors = new List<string>();
+                if (string.IsNullOrEmpty(blobDetails.FileData))
+                {
+                    blobDetails.Status = "Error";
+                    var errorLog = new SAPErrorLogEntity();
+                    errorLog.PipeLineName = "CustomerPromotion";
+                    errorLog.FileName = blobDetails.FileName;
+                    errorLog.ErrorMessage = "File is empty";
+                    promotionData.SaveErrorLogData(errorLog);
+                    Logger logger = new Logger(_configuration);
+                    logger.ErrorLogData(null, "File is empty");
+                }
+                else
+                {
+                    CustomerPromotionJsonEntity customer_promotionJsonEntities = JsonConvert.DeserializeObject<CustomerPromotionJsonEntity>(blobDetails.FileData, new JsonSerializerSettings
+                    {
+                        Error = delegate (object sender, ErrorEventArgs args)
+                        {
+                                errors.Add(args.ErrorContext.Error.Message);
+                                args.ErrorContext.Handled = true;
+
+                        },
+                        Converters = { new IsoDateTimeConverter()}
+                     });
+
+                    Dictionary<string, int> returnData = new Dictionary<string, int>();
+                    if (customer_promotionJsonEntities == null)
+                    {
+                        returnData.Add("CustomerPromotion", 0);
+                        var errorLog = new SAPErrorLogEntity();
+                        errorLog.PipeLineName = "CustomerPromotion";
+                        errorLog.FileName = blobDetails.FileName;
+                        errorLog.ErrorMessage = errors[0];
+                        //SaveErrorLogData(errorLog);
+                        Logger logger = new Logger(_configuration);
+                        logger.ErrorLogData(null, errors[0]);
+                    }
+                    else
+                    {
+                        foreach (var payload in customer_promotionJsonEntities.payload)
+                        {
+                            if (payload.customerC == null)
+                            {
+                                returnData.Add("CustomerNumber is null", 0);
+                            }
+                            else if (payload.dealNoC == null)
+                            {
+                                returnData.Add("PromotionID is null", 0);
+                            }
+                            else
+                            {
+                                var dataTable = new DataTable();
+                                dataTable.Columns.Add("PromotionID");
+                                dataTable.Columns.Add("CustomerNumber");
+                                dataTable.Columns.Add("CustomerGrouping");
+                                
+                                dataTable.Rows.Add(payload.dealNoC, payload.customerC, null);
+                                        
+                                dataTable.AcceptChanges();
+                                if (dataTable.Rows.Count > 0)
+                                {
+                                    var return_CustomerPromo = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
+                                    if (!returnData.ContainsKey("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC))
+                                        {
+                                        returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
+                                        }
+                                }                              
+                            }
+                        }
+                    }
+
+                    foreach (var returnvalue in returnData)
+                    {
+                        if (returnvalue.Value == 0)
+                        {
+                            blobDetails.Status = "Error";
+                            var errorLog2 = new SAPErrorLogEntity();
+                            errorLog2.PipeLineName = "CustomerPromotion";
+                            errorLog2.FileName = blobDetails.FileName;
+                            errorLog2.ParentNodeName = returnvalue.Key;
+                            //SaveErrorLogData(errorLog2);
+                           // break;
+                        }
+                        else
+                        {
+                            blobDetails.Status = "Success";
+                        }
+                    }
+                }
+                var destDirectory = "source/process/customer-promotion/" + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
+                MoveFile(blobDetails, container, destDirectory);
+            }
+            catch (Exception ex)
+            {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "CustomerPromotion";
+                errorLog.ParentNodeName = "CheckCustomerPromoRequiredFields";
+                errorLog.ErrorMessage = ex.Message;
+                promotionData.SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, errorLog.ErrorMessage);
+            }
+         }
 
         public void CheckRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
         {
@@ -151,6 +292,8 @@ namespace SAPPromotion
                                     }
                                 else
                                 {
+                                   
+
                                     //insert to 7 table
                                     if (PRODHDR.Count != 0)
                                     {
@@ -171,7 +314,35 @@ namespace SAPPromotion
                                                         var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
                                                         returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
                                                     }
-                                                }
+
+                                                    if (prodhdr.Slabs != null)
+                                                        {
+                                                        if (prodhdr.Slabs.Count != 0)
+                                                            {
+                                                            foreach (var slabData in prodhdr.Slabs)
+                                                                {
+                                                                foreach (var slabDataREQ in slabData.REQ)
+                                                                    {
+                                                                    countPRORQD++;
+                                                                    dataPRORQD.RequirementId = slabDataREQ.itemn;
+                                                                    dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
+                                                                    dataPRORQD.FromQTY = slabDataREQ.fromqty;
+                                                                    dataPRORQD.ToQTY = slabDataREQ.toqty; 
+                                                                    dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
+                                                                    dataPRORQD.ActiveTo = slabDataREQ.activeto;
+                                                                    var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
+                                                                    
+                                                                    var dataPROMGR = new SAPPromotionMaterialGroupMasterDetails();
+                                                                    dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
+                                                                    dataPROMGR.MaterialGroup = slabDataREQ.reqmgroup;
+                                                                    
+                                                                    var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                    }
                                             }
                                         }
 
@@ -189,55 +360,37 @@ namespace SAPPromotion
                                                         var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
                                                         returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                     }
-                                                }
-                                            }
-                                        }
 
-                                    }
-
-                                    if (CUGRHD != null)
-                                    {
-                                        if (CUGRHD.Count != 0)
-                                        {
-                                            foreach (var dataCUGRHD in CUGRHD)
-                                            {
-                                                //if (!string.IsNullOrEmpty(dataCUGRHD.CustomerGrouping))
-                                                //{
-                                                //    countCUGRHD++;
-                                                //    dataCUGRHD.PromotionID = prodhdr.PromotionID;
-                                                //    var return_CUGRHD = promotionData.SaveCustomerGroupPromotionsdata(dataCUGRHD);
-                                                //    returnData.Add("CUGRHD" + countCUGRHD, return_CUGRHD);
-                                                if (dataCUGRHD.CustomerNumber != null)
-                                                {
-                                                    if (dataCUGRHD.CustomerNumber.Count != 0)
+                                                    if (prodhdr.Slabs != null)
                                                     {
-
-                                                        var listCustomerPromotionDetails = new List<SAPCustomerPromotionDetailsEntity>();
-                                                        var dataTable = new DataTable();
-                                                        dataTable.Columns.Add("PromotionID");
-                                                        dataTable.Columns.Add("CustomerNumber");
-                                                        dataTable.Columns.Add("CustomerGrouping");
-                                                        foreach (var dataCUGRIN in dataCUGRHD.CustomerNumber)
+                                                        if (prodhdr.Slabs.Count != 0)
                                                         {
-                                                            if (!string.IsNullOrEmpty(dataCUGRIN))
+                                                            foreach (var slabData in prodhdr.Slabs)
                                                             {
-                                                                dataTable.Rows.Add(prodhdr.PromotionID, dataCUGRIN, dataCUGRHD.CustomerGrouping);
+                                                                foreach (var slabDataREW in slabData.REW)
+                                                                {
+                                                                    countPRORWD++;
+                                                                    dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
+                                                                    dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
+                                                                    dataPRORWD.RewardValue = slabDataREW.discountvalue;
+                                                                    dataPRORWD.RewardPercentage = slabDataREW.discountrate;
+                                                                    dataPRORWD.RewardQty = slabDataREW.discountqty;
+                                                                    dataPRORWD.DiscountType = slabDataREW.discounttype;
+                                                                    dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
+                                                                    var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
+                                                                    returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
+                                                                }
                                                             }
-                                                        }
-                                                        dataTable.AcceptChanges();
-                                                        if (dataTable.Rows.Count != 0)
-                                                        {
-                                                            var return_CUGRIN = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
-                                                            returnData.Add("CUGRIN" + countCUGRIN, return_CUGRIN);
-                                                            countCUGRIN++;
                                                         }
                                                     }
                                                 }
-                                                //}
-
                                             }
+
+                                            
                                         }
                                     }
+
+                                   
 
                                     //not complete
                                     //if (MAGRHD != null)
@@ -316,7 +469,7 @@ namespace SAPPromotion
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, errorLog.ErrorMessage);
-                }
+            }
         }
 
         public void MoveFile(SAPBlobEntity blob, CloudBlobContainer destContainer, string destDirectory)
@@ -340,7 +493,9 @@ namespace SAPPromotion
                 destBlob.StartCopy(blob.Blob);
                 //remove source blob after copy is done.
                 blob.Blob.Delete();
-            }
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(null, "File " + blob.FileName + " processed");
+                }
             catch (Exception ex)
             {
                 var errorLog = new SAPErrorLogEntity();

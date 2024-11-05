@@ -201,8 +201,12 @@
     <Compile Include="SAPPromotionJsonData.cs" />
     <Compile Include="SAPPromotionJsonEntity.cs" />
     <Compile Include="SAPPromotionMasterDetailsEntity.cs" />
+    <Compile Include="SAPPromotionMaterialGroupMasterDetails.cs" />
     <Compile Include="SAPPromotionRequirementsDetailsEntity.cs" />
     <Compile Include="SAPPromotionRewardDetailsEntity.cs" />
+    <Compile Include="SAPPromotionSlabDetailsEntity.cs" />
+    <Compile Include="SAPPromotionSlabReqDetailsEntity.cs" />
+    <Compile Include="SAPPromotionSlabRewDetailsEntity.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

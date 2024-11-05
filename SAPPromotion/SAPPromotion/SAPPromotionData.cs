@@ -61,6 +61,7 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@SalesOrganization_HD", promotionMasterDetailsdata.SalesOrganization_HD);
                 cmd.Parameters.AddWithValue("@DistributionChannel_HD", promotionMasterDetailsdata.DistributionChannel_HD);
                 cmd.Parameters.AddWithValue("@Division_HD", promotionMasterDetailsdata.Division_HD);
+                cmd.Parameters.AddWithValue("@IsSlab", promotionMasterDetailsdata.IsSlab);
 
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
@@ -88,6 +89,43 @@ namespace SAPPromotion
                 return 0;
             }
         }
+
+        public int SavePromotionMaterialGroupMasterDetails(SAPPromotionMaterialGroupMasterDetails promotionMaterialGroupMasterDetailsdata)
+        {
+            try
+                {
+                SqlConnection con = new SqlConnection(_configuration["DatabaseConnectionString"]);
+                SqlCommand cmd = new SqlCommand("PromotionMaterialGroupMasterDetails_save", con);
+                cmd.CommandType = CommandType.StoredProcedure;               
+                cmd.Parameters.AddWithValue("@MaterialGroup", promotionMaterialGroupMasterDetailsdata.MaterialGroup);
+                cmd.Parameters.AddWithValue("@MaterialNumber ", promotionMaterialGroupMasterDetailsdata.MaterialNumber);             
+                cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
+                cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
+                con.Open();
+
+                int k = cmd.ExecuteNonQuery();
+                con.Close();
+                if (k != 0)
+                    {
+                    return k;
+                    }
+                else
+                    {
+                    return 0;
+                    }
+                }
+            catch (Exception ex)
+                {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "Promotion";
+                errorLog.ParentNodeName = "PromotionMaterialGroupMasterDetails_save";
+                errorLog.ErrorMessage = ex.Message;
+                SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, ex.Message);
+                return 0;
+                }
+            }
         public int SavePromotionRequirementDetailsdata(SAPPromotionRequirementsDetailsEntity promotionRequirementDetailsdata)
         {
             try
@@ -102,6 +140,10 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@ProductSegmentID", promotionRequirementDetailsdata.ProductSegmentID);
                 cmd.Parameters.AddWithValue("@RequirementQty ", promotionRequirementDetailsdata.RequirementQty);
                 cmd.Parameters.AddWithValue("@RequirementValue", promotionRequirementDetailsdata.RequirementValue);
+                cmd.Parameters.AddWithValue("@FromQTY", Convert.ToInt32(promotionRequirementDetailsdata.FromQTY));
+                cmd.Parameters.AddWithValue("@ToQTY", Convert.ToInt32(promotionRequirementDetailsdata.ToQTY));
+                cmd.Parameters.AddWithValue("@ActiveFrom", DateTime.ParseExact(promotionRequirementDetailsdata.ActiveFrom, "yyyy-MM-dd", CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@ActiveTo", DateTime.ParseExact(promotionRequirementDetailsdata.ActiveTo, "yyyy-MM-dd", CultureInfo.InvariantCulture));
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();
@@ -146,6 +188,8 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@RewardQty", promotionRewardDetailsdata.RewardQty);
                 cmd.Parameters.AddWithValue("@RewardValue", promotionRewardDetailsdata.RewardValue);
                 cmd.Parameters.AddWithValue("@RewardPercentage", promotionRewardDetailsdata.RewardPercentage);
+                cmd.Parameters.AddWithValue("@DiscountType", promotionRewardDetailsdata.DiscountType);
+                cmd.Parameters.AddWithValue("@FreeGoodQTY", Convert.ToInt32(promotionRewardDetailsdata.FreeGoodQTY));
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();

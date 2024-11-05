@@ -180,7 +180,10 @@ namespace SAPPromotion
                                 if (dataTable.Rows.Count > 0)
                                 {
                                     var return_CustomerPromo = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
-                                    returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
+                                    if (!returnData.ContainsKey("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC))
+                                        {
+                                        returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
+                                        }
                                 }                              
                             }
                         }
@@ -196,7 +199,7 @@ namespace SAPPromotion
                             errorLog2.FileName = blobDetails.FileName;
                             errorLog2.ParentNodeName = returnvalue.Key;
                             //SaveErrorLogData(errorLog2);
-                            break;
+                           // break;
                         }
                         else
                         {
@@ -204,8 +207,8 @@ namespace SAPPromotion
                         }
                     }
                 }
-                var destDirectory = destblobDirectoryPrefix + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
-                MoveFile(blobDetails, container, customerPromoDestDirectoryPrefix);
+                var destDirectory = "source/process/customer-promotion/" + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
+                MoveFile(blobDetails, container, destDirectory);
             }
             catch (Exception ex)
             {
@@ -289,6 +292,8 @@ namespace SAPPromotion
                                     }
                                 else
                                 {
+                                   
+
                                     //insert to 7 table
                                     if (PRODHDR.Count != 0)
                                     {
@@ -309,7 +314,35 @@ namespace SAPPromotion
                                                         var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
                                                         returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
                                                     }
-                                                }
+
+                                                    if (prodhdr.Slabs != null)
+                                                        {
+                                                        if (prodhdr.Slabs.Count != 0)
+                                                            {
+                                                            foreach (var slabData in prodhdr.Slabs)
+                                                                {
+                                                                foreach (var slabDataREQ in slabData.REQ)
+                                                                    {
+                                                                    countPRORQD++;
+                                                                    dataPRORQD.RequirementId = slabDataREQ.itemn;
+                                                                    dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
+                                                                    dataPRORQD.FromQTY = slabDataREQ.fromqty;
+                                                                    dataPRORQD.ToQTY = slabDataREQ.toqty; 
+                                                                    dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
+                                                                    dataPRORQD.ActiveTo = slabDataREQ.activeto;
+                                                                    var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
+                                                                    
+                                                                    var dataPROMGR = new SAPPromotionMaterialGroupMasterDetails();
+                                                                    dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
+                                                                    dataPROMGR.MaterialGroup = slabDataREQ.reqmgroup;
+                                                                    
+                                                                    var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                    }
                                             }
                                         }
 
@@ -327,8 +360,33 @@ namespace SAPPromotion
                                                         var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
                                                         returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                     }
+
+                                                    if (prodhdr.Slabs != null)
+                                                    {
+                                                        if (prodhdr.Slabs.Count != 0)
+                                                        {
+                                                            foreach (var slabData in prodhdr.Slabs)
+                                                            {
+                                                                foreach (var slabDataREW in slabData.REW)
+                                                                {
+                                                                    countPRORWD++;
+                                                                    dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
+                                                                    dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
+                                                                    dataPRORWD.RewardValue = slabDataREW.discountvalue;
+                                                                    dataPRORWD.RewardPercentage = slabDataREW.discountrate;
+                                                                    dataPRORWD.RewardQty = slabDataREW.discountqty;
+                                                                    dataPRORWD.DiscountType = slabDataREW.discounttype;
+                                                                    dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
+                                                                    var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
+                                                                    returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
+
+                                            
                                         }
                                     }
 
@@ -435,7 +493,9 @@ namespace SAPPromotion
                 destBlob.StartCopy(blob.Blob);
                 //remove source blob after copy is done.
                 blob.Blob.Delete();
-            }
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(null, "File " + blob.FileName + " processed");
+                }
             catch (Exception ex)
             {
                 var errorLog = new SAPErrorLogEntity();

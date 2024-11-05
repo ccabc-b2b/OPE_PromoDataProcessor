@@ -12,6 +12,8 @@
         public string RewardQty { get; set; }
         public string RewardValue { get; set; }
         public string RewardPercentage { get; set; }
+        public string DiscountType { get; set; }
+        public string FreeGoodQTY { get; set; }
 
     }
 }

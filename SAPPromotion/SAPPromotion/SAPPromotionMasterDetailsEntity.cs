@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace SAPPromotion
     {
@@ -45,5 +46,7 @@ namespace SAPPromotion
         public string BundlePromotionFlag { get; set; }
         public List<SAPPromotionRequirementsDetailsEntity> PRORQD { get; set; }
         public List<SAPPromotionRewardDetailsEntity> PRORWD { get; set; }
-    }
+        public int IsSlab { get; set; }
+        public List<SAPPromotionSlabDetailsEntity> Slabs { get; set; }
+        }
 }

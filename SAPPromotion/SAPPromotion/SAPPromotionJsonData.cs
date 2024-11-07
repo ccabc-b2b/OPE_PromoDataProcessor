@@ -12,7 +12,7 @@ using System.Linq;
 namespace SAPPromotion
     {
     public class SAPPromotionJsonData
-    {
+        {
         readonly string containerName = Properties.Settings.Default.ContainerName;
         readonly string blobDirectoryPrefix = Properties.Settings.Default.BlobDirectoryPrefix;
         readonly string blobDirectoryCustomerPromoPrefix = Properties.Settings.Default.BlobDirectoryCustomerPromoPrefix;
@@ -21,15 +21,15 @@ namespace SAPPromotion
         static IConfiguration _configuration;
         readonly SAPPromotionData promotionData;
         public SAPPromotionJsonData(IConfiguration configuration)
-        {
+            {
             _configuration = configuration;
             promotionData = new SAPPromotionData(_configuration);
-        }
+            }
 
         public void LoadPromotionData()
-        {
-            try
             {
+            try
+                {
 
                 List<SAPBlobEntity> blobList = new List<SAPBlobEntity>();
                 List<SAPBlobEntity> CustomerPromoBlobList = new List<SAPBlobEntity>();
@@ -38,16 +38,16 @@ namespace SAPPromotion
                 var storageAccount = CloudStorageAccount.Parse(storageKey);
                 var myClient = storageAccount.CreateCloudBlobClient();
                 var container = myClient.GetContainerReference(containerName);
-               
+
                 var list = container.ListBlobs().OfType<CloudBlobDirectory>().ToList();
                 var blobListDirectory = list[0].ListBlobs().OfType<CloudBlobDirectory>().ToList();
 
                 foreach (var blobDirectory in blobListDirectory)
-                {
-                    if (blobDirectory.Prefix == blobDirectoryPrefix || blobDirectory.Prefix == blobDirectoryCustomerPromoPrefix )
                     {
-                        foreach (var blobFile in blobDirectory.ListBlobs().OfType<CloudBlockBlob>())
+                    if (blobDirectory.Prefix == blobDirectoryPrefix || blobDirectory.Prefix == blobDirectoryCustomerPromoPrefix)
                         {
+                        foreach (var blobFile in blobDirectory.ListBlobs().OfType<CloudBlockBlob>())
+                            {
                             SAPBlobEntity blobDetails = new SAPBlobEntity();
                             string[] blobName = blobFile.Name.Split(new char[] { '/' });
                             string[] filename = blobName[2].Split(new char[] { '.' });
@@ -61,66 +61,66 @@ namespace SAPPromotion
                             blobDetails.FileData = blockBlob.DownloadTextAsync().Result;
                             blobDetails.BlobName = blobFile.Name;
 
-                            if(blobDirectory.Prefix == blobDirectoryPrefix)
-                            {
+                            if (blobDirectory.Prefix == blobDirectoryPrefix)
+                                {
                                 blobList.Add(blobDetails);
-                            }
+                                }
                             else
-                            {
+                                {
                                 CustomerPromoBlobList.Add(blobDetails);
+                                }
+                            // blobList.Add(blobDetails);
                             }
-                           // blobList.Add(blobDetails);
-                        }
 
-                        if(blobList !=  null)
-                        {
+                        if (blobList != null)
+                            {
                             blobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
-                        }
+                            }
 
-                        if(CustomerPromoBlobList != null)
-                        {
+                        if (CustomerPromoBlobList != null)
+                            {
                             CustomerPromoBlobList.OrderByDescending(x => x.FileCreatedDate.Date).ThenByDescending(x => x.FileCreatedDate.TimeOfDay).ToList();
-                        }  
+                            }
+                        }
                     }
-                }
 
                 foreach (var blobDetails in blobList)
-                {
+                    {
                     CheckRequiredFields(blobDetails, container);
-                }
+                    }
 
                 foreach (var blobDetails in CustomerPromoBlobList)
-                {
+                    {
                     CheckCustomerPromoRequiredFields(blobDetails, container);
-                }             
-            }
+                    }
+                }
             catch (StorageException ex)
-            {
+                {
                 var errorLog = new SAPErrorLogEntity();
                 errorLog.PipeLineName = "Promotion";
                 errorLog.ErrorMessage = ex.Message;
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, ex.Message);
-            }
+                }
             catch (Exception ex)
-            {
+                {
                 var errorLog = new SAPErrorLogEntity();
                 errorLog.PipeLineName = "Promotion";
                 errorLog.ErrorMessage = ex.Message;
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, ex.Message);
+                }
             }
-        }
 
         public void CheckCustomerPromoRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
-        {
-            try
             {
+            try
+                {
                 List<string> errors = new List<string>();
                 if (string.IsNullOrEmpty(blobDetails.FileData))
-                {
+                    {
                     blobDetails.Status = "Error";
                     var errorLog = new SAPErrorLogEntity();
                     errorLog.PipeLineName = "CustomerPromotion";
@@ -129,23 +129,23 @@ namespace SAPPromotion
                     promotionData.SaveErrorLogData(errorLog);
                     Logger logger = new Logger(_configuration);
                     logger.ErrorLogData(null, "File is empty");
-                }
+                    }
                 else
-                {
-                    CustomerPromotionJsonEntity customer_promotionJsonEntities = JsonConvert.DeserializeObject<CustomerPromotionJsonEntity>(blobDetails.FileData, new JsonSerializerSettings
                     {
+                    CustomerPromotionJsonEntity customer_promotionJsonEntities = JsonConvert.DeserializeObject<CustomerPromotionJsonEntity>(blobDetails.FileData, new JsonSerializerSettings
+                        {
                         Error = delegate (object sender, ErrorEventArgs args)
                         {
-                                errors.Add(args.ErrorContext.Error.Message);
-                                args.ErrorContext.Handled = true;
+                            errors.Add(args.ErrorContext.Error.Message);
+                            args.ErrorContext.Handled = true;
 
-                        },
-                        Converters = { new IsoDateTimeConverter()}
-                     });
+                            },
+                        Converters = { new IsoDateTimeConverter() }
+                        });
 
                     Dictionary<string, int> returnData = new Dictionary<string, int>();
                     if (customer_promotionJsonEntities == null)
-                    {
+                        {
                         returnData.Add("CustomerPromotion", 0);
                         var errorLog = new SAPErrorLogEntity();
                         errorLog.PipeLineName = "CustomerPromotion";
@@ -154,64 +154,64 @@ namespace SAPPromotion
                         //SaveErrorLogData(errorLog);
                         Logger logger = new Logger(_configuration);
                         logger.ErrorLogData(null, errors[0]);
-                    }
+                        }
                     else
-                    {
-                        foreach (var payload in customer_promotionJsonEntities.payload)
                         {
+                        foreach (var payload in customer_promotionJsonEntities.payload)
+                            {
                             if (payload.customerC == null)
-                            {
+                                {
                                 returnData.Add("CustomerNumber is null", 0);
-                            }
+                                }
                             else if (payload.dealNoC == null)
-                            {
+                                {
                                 returnData.Add("PromotionID is null", 0);
-                            }
+                                }
                             else
-                            {
+                                {
                                 var dataTable = new DataTable();
                                 dataTable.Columns.Add("PromotionID");
                                 dataTable.Columns.Add("CustomerNumber");
                                 dataTable.Columns.Add("CustomerGrouping");
-                                
+
                                 dataTable.Rows.Add(payload.dealNoC, payload.customerC, null);
-                                        
+
                                 dataTable.AcceptChanges();
                                 if (dataTable.Rows.Count > 0)
-                                {
+                                    {
                                     var return_CustomerPromo = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
                                     if (!returnData.ContainsKey("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC))
                                         {
                                         returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
                                         }
-                                }                              
+                                    }
+                                }
                             }
                         }
-                    }
 
                     foreach (var returnvalue in returnData)
-                    {
-                        if (returnvalue.Value == 0)
                         {
+                        if (returnvalue.Value == 0)
+                            {
                             blobDetails.Status = "Error";
                             var errorLog2 = new SAPErrorLogEntity();
                             errorLog2.PipeLineName = "CustomerPromotion";
                             errorLog2.FileName = blobDetails.FileName;
                             errorLog2.ParentNodeName = returnvalue.Key;
                             //SaveErrorLogData(errorLog2);
-                           // break;
-                        }
+                            // break;
+                            }
                         else
-                        {
+                            {
                             blobDetails.Status = "Success";
+                            }
                         }
                     }
-                }
                 var destDirectory = "source/process/customer-promotion/" + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
                 MoveFile(blobDetails, container, destDirectory);
-            }
+                }
             catch (Exception ex)
-            {
+                {
                 var errorLog = new SAPErrorLogEntity();
                 errorLog.PipeLineName = "CustomerPromotion";
                 errorLog.ParentNodeName = "CheckCustomerPromoRequiredFields";
@@ -219,16 +219,16 @@ namespace SAPPromotion
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, errorLog.ErrorMessage);
+                }
             }
-         }
 
         public void CheckRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
-        {
-            try
             {
+            try
+                {
                 List<string> errors = new List<string>();
                 if (string.IsNullOrEmpty(blobDetails.FileData))
-                {
+                    {
                     blobDetails.Status = "Error";
                     var errorLog = new SAPErrorLogEntity();
                     errorLog.PipeLineName = "Promotion";
@@ -236,25 +236,25 @@ namespace SAPPromotion
                     errorLog.ErrorMessage = "File is empty";
                     promotionData.SaveErrorLogData(errorLog);
                     Logger logger = new Logger(_configuration);
-                    logger.ErrorLogData(null,"File is empty");
+                    logger.ErrorLogData(null, "File is empty");
                     }
                 else
-                {
-                    SAPPromotion promotionJsonEntities = JsonConvert.DeserializeObject<SAPPromotion>(blobDetails.FileData, new JsonSerializerSettings
                     {
+                    SAPPromotion promotionJsonEntities = JsonConvert.DeserializeObject<SAPPromotion>(blobDetails.FileData, new JsonSerializerSettings
+                        {
                         Error = delegate (object sender, ErrorEventArgs args)
                         {
                             errors.Add(args.ErrorContext.Error.Message);
                             args.ErrorContext.Handled = true;
 
-                        },
+                            },
                         Converters = { new IsoDateTimeConverter()
                     }
-                    });
+                        });
 
                     Dictionary<string, int> returnData = new Dictionary<string, int>();
                     if (promotionJsonEntities == null)
-                    {
+                        {
                         blobDetails.Status = "Error";
                         var errorLog = new SAPErrorLogEntity();
                         errorLog.PipeLineName = "Promotion";
@@ -265,22 +265,21 @@ namespace SAPPromotion
                         logger.ErrorLogData(null, errors[0]);
                         }
                     else
-                    {
+                        {
                         int countPRORQD = 0;
                         int countPRORWD = 0;
                         int countCUGRIN = 0;
                         int countPROMST = 0;
                         foreach (var promotiondata in promotionJsonEntities.payload)
-                        {
-
+                            {
                             var CUGRHD = promotiondata.CUGRHD;
                             var MAGRHD = promotiondata.MAGRHD;
                             var PRODHDR = promotiondata.PRODHDR;
                             foreach (var prodhdr in PRODHDR)
-                            {
+                                {
                                 countPROMST++;
                                 if (PRODHDR == null || PRODHDR.Count == 0 || string.IsNullOrEmpty(prodhdr.PromotionID))
-                                {
+                                    {
                                     returnData.Add("PRODHDR", 0);
                                     var errorLog = new SAPErrorLogEntity();
                                     errorLog.PipeLineName = "Promotion";
@@ -291,106 +290,90 @@ namespace SAPPromotion
                                     logger.ErrorLogData(null, "Required fields are null");
                                     }
                                 else
-                                {
-                                   
-
+                                    {
                                     //insert to 7 table
                                     if (PRODHDR.Count != 0)
-                                    {
+                                        {
                                         var return_PRODHDR = promotionData.SavePromotionMasterDetailsdata(prodhdr);
                                         returnData.Add("PRODHDR" + countPROMST, return_PRODHDR);
 
-                                        if (prodhdr.PRORQD != null)
-                                        {
-                                            if (prodhdr.PRORQD.Count != 0)
-                                            {
+                                        var dataPROMGR = new SAPPromotionMaterialGroupMasterDetails();
 
-                                                foreach (var dataPRORQD in prodhdr.PRORQD)
+                                        if (prodhdr.PRORQD != null)
+                                            {
+                                            if (prodhdr.PRORQD.Count != 0)
                                                 {
-                                                    if (!string.IsNullOrEmpty(dataPRORQD.RequirementId))
+                                                foreach (var dataPRORQD in prodhdr.PRORQD)
                                                     {
+                                                    if (!string.IsNullOrEmpty(dataPRORQD.RequirementId))
+                                                        {
                                                         countPRORQD++;
                                                         dataPRORQD.PromotionID = prodhdr.PromotionID;
                                                         var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
                                                         returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
-                                                    }
+                                                        }
 
                                                     if (prodhdr.Slabs != null)
                                                         {
-                                                        if (prodhdr.Slabs.Count != 0)
+                                                        foreach (var slabDataREQ in prodhdr.Slabs.REQ)
                                                             {
-                                                            foreach (var slabData in prodhdr.Slabs)
-                                                                {
-                                                                foreach (var slabDataREQ in slabData.REQ)
-                                                                    {
-                                                                    countPRORQD++;
-                                                                    dataPRORQD.RequirementId = slabDataREQ.itemn;
-                                                                    dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
-                                                                    dataPRORQD.FromQTY = slabDataREQ.fromqty;
-                                                                    dataPRORQD.ToQTY = slabDataREQ.toqty; 
-                                                                    dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
-                                                                    dataPRORQD.ActiveTo = slabDataREQ.activeto;
-                                                                    var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
-                                                                    
-                                                                    var dataPROMGR = new SAPPromotionMaterialGroupMasterDetails();
-                                                                    dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
-                                                                    dataPROMGR.MaterialGroup = slabDataREQ.reqmgroup;
-                                                                    
-                                                                    var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
-                                                                    }
-                                                                }
+                                                            countPRORQD++;
+                                                            dataPRORQD.RequirementId = slabDataREQ.itemn;
+                                                            dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
+                                                            dataPRORQD.FromQTY = slabDataREQ.fromqty;
+                                                            dataPRORQD.ToQTY = slabDataREQ.toqty;
+                                                            dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
+                                                            dataPRORQD.ActiveTo = slabDataREQ.activeto;
+                                                            var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
+
+                                                            dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
+                                                            dataPROMGR.MaterialGroup = slabDataREQ.reqmgroup;
+
+                                                            var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
                                                             }
                                                         }
 
                                                     }
+                                                }
                                             }
-                                        }
 
                                         if (prodhdr.PRORWD != null)
-                                        {
-                                            if (prodhdr.PRORWD.Count != 0)
                                             {
+                                            if (prodhdr.PRORWD.Count != 0)
+                                                {
 
                                                 foreach (var dataPRORWD in prodhdr.PRORWD)
-                                                {
-                                                    if (!string.IsNullOrEmpty(dataPRORWD.PromoRewardID))
                                                     {
+                                                    if (!string.IsNullOrEmpty(dataPRORWD.PromoRewardID))
+                                                        {
                                                         countPRORWD++;
                                                         dataPRORWD.PromotionID = prodhdr.PromotionID;
                                                         var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
                                                         returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
-                                                    }
+                                                        }
 
                                                     if (prodhdr.Slabs != null)
-                                                    {
-                                                        if (prodhdr.Slabs.Count != 0)
                                                         {
-                                                            foreach (var slabData in prodhdr.Slabs)
+                                                        foreach (var slabDataREW in prodhdr.Slabs.REW)
                                                             {
-                                                                foreach (var slabDataREW in slabData.REW)
-                                                                {
-                                                                    countPRORWD++;
-                                                                    dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
-                                                                    dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
-                                                                    dataPRORWD.RewardValue = slabDataREW.discountvalue;
-                                                                    dataPRORWD.RewardPercentage = slabDataREW.discountrate;
-                                                                    dataPRORWD.RewardQty = slabDataREW.discountqty;
-                                                                    dataPRORWD.DiscountType = slabDataREW.discounttype;
-                                                                    dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
-                                                                    var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
-                                                                    returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
-                                                                }
+                                                            countPRORWD++;
+                                                            dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
+                                                            dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
+                                                            dataPRORWD.RewardValue = slabDataREW.discountvalue;
+                                                            dataPRORWD.RewardPercentage = slabDataREW.discountrate;
+                                                            dataPRORWD.RewardQty = slabDataREW.discountqty;
+                                                            dataPRORWD.DiscountType = slabDataREW.discounttype;
+                                                            dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
+                                                            var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
+                                                            returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
-
-                                            
                                         }
-                                    }
 
-                                   
+
 
                                     //not complete
                                     //if (MAGRHD != null)
@@ -429,14 +412,14 @@ namespace SAPPromotion
                                     //        }
                                     //    }
                                     //}
+                                    }
                                 }
-                            }
 
                             //need to check all the values other than 0
                             foreach (var returnvalue in returnData)
-                            {
-                                if (returnvalue.Value == 0)
                                 {
+                                if (returnvalue.Value == 0)
+                                    {
                                     blobDetails.Status = "Error";
                                     var errorLog = new SAPErrorLogEntity();
                                     errorLog.PipeLineName = "Promotion";
@@ -447,21 +430,22 @@ namespace SAPPromotion
                                     logger.ErrorLogData(null, errorLog.ErrorMessage);
                                     blobDetails.Status = "Error";
                                     break;
-                                }
+                                    }
                                 else
-                                {
+                                    {
                                     blobDetails.Status = "Success";
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
                 var destDirectory = "source/process/promotion/" + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;
                 MoveFile(blobDetails, container, destDirectory);
-            }
+                }
+
             catch (Exception ex)
-            {
+                {
                 var errorLog = new SAPErrorLogEntity();
                 errorLog.PipeLineName = "Promotion";
                 errorLog.ParentNodeName = "CheckRequiredFields";
@@ -469,14 +453,14 @@ namespace SAPPromotion
                 promotionData.SaveErrorLogData(errorLog);
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, errorLog.ErrorMessage);
+                }
             }
-        }
 
         public void MoveFile(SAPBlobEntity blob, CloudBlobContainer destContainer, string destDirectory)
-        {
+            {
             CloudBlockBlob destBlob;
             try
-            {
+                {
                 if (blob.Blob == null)
                     throw new Exception("Source blob cannot be null.");
 
@@ -497,7 +481,7 @@ namespace SAPPromotion
                 logger.ErrorLogData(null, "File " + blob.FileName + " processed");
                 }
             catch (Exception ex)
-            {
+                {
                 var errorLog = new SAPErrorLogEntity();
                 errorLog.PipeLineName = "Promotion";
                 errorLog.FileName = blob.FileName;
@@ -507,6 +491,6 @@ namespace SAPPromotion
                 Logger logger = new Logger(_configuration);
                 logger.ErrorLogData(ex, ex.Message);
                 }
+            }
         }
     }
-}

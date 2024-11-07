@@ -299,10 +299,8 @@ namespace SAPPromotion
 
                                         var dataPROMGR = new SAPPromotionMaterialGroupMasterDetails();
 
-                                        if (prodhdr.PRORQD != null)
-                                            {
-                                            if (prodhdr.PRORQD.Count != 0)
-                                                {
+                                        if (prodhdr.PRORQD != null && prodhdr.PRORQD.Count != 0)
+                                            {                                           
                                                 foreach (var dataPRORQD in prodhdr.PRORQD)
                                                     {
                                                     if (!string.IsNullOrEmpty(dataPRORQD.RequirementId))
@@ -330,18 +328,14 @@ namespace SAPPromotion
                                                             dataPROMGR.MaterialGroup = slabDataREQ.reqmgroup;
 
                                                             var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
-                                                            }
+                                                            
                                                         }
-
                                                     }
                                                 }
                                             }
 
-                                        if (prodhdr.PRORWD != null)
-                                            {
-                                            if (prodhdr.PRORWD.Count != 0)
-                                                {
-
+                                        if (prodhdr.PRORWD != null && prodhdr.PRORWD.Count != 0)
+                                            {                                          
                                                 foreach (var dataPRORWD in prodhdr.PRORWD)
                                                     {
                                                     if (!string.IsNullOrEmpty(dataPRORWD.PromoRewardID))
@@ -366,7 +360,7 @@ namespace SAPPromotion
                                                             dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
                                                             var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
                                                             returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
-                                                            }
+                                                            
                                                         }
                                                     }
                                                 }

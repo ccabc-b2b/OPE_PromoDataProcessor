@@ -47,6 +47,7 @@ namespace SAPPromotion
         public List<SAPPromotionRequirementsDetailsEntity> PRORQD { get; set; }
         public List<SAPPromotionRewardDetailsEntity> PRORWD { get; set; }
         public int IsSlab { get; set; }
-        public List<SAPPromotionSlabDetailsEntity> Slabs { get; set; }
+       // public List<SAPPromotionSlabDetailsEntity> Slabs { get; set; }
+       public SAPPromotionSlabDetailsEntity Slabs { get; set; }
         }
 }

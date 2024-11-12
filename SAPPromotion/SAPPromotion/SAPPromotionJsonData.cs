@@ -308,8 +308,15 @@ namespace SAPPromotion
                                                         countPRORQD++;
                                                         dataPRORQD.PromotionID = prodhdr.PromotionID;
                                                         var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
+
+                                                        dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
+                                                        dataPROMGR.MaterialGroup = dataPRORQD.MaterialGroupID;
+                                                        dataPROMGR.GroupType = "REQ";
+
+                                                        var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
+
                                                         returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
-                                                        }
+                                                    }
 
                                                     if (prodhdr.Slabs != null)
                                                         {
@@ -318,17 +325,13 @@ namespace SAPPromotion
                                                             countPRORQD++;
                                                             dataPRORQD.RequirementId = slabDataREQ.itemn;
                                                             dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
+                                                            dataPRORQD.MaterialNumber = null;
                                                             dataPRORQD.FromQTY = slabDataREQ.fromqty;
                                                             dataPRORQD.ToQTY = slabDataREQ.toqty;
                                                             dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
                                                             dataPRORQD.ActiveTo = slabDataREQ.activeto;
                                                             var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
-
-                                                            dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
-                                                            dataPROMGR.MaterialGroup = slabDataREQ.reqmgroup;
-
-                                                            var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
-                                                            
+                                                      
                                                         }
                                                     }
                                                 }
@@ -343,7 +346,13 @@ namespace SAPPromotion
                                                         countPRORWD++;
                                                         dataPRORWD.PromotionID = prodhdr.PromotionID;
                                                         var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
-                                                        returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
+
+                                                       dataPROMGR.MaterialNumber = dataPRORWD.MaterialNumber;
+                                                       dataPROMGR.MaterialGroup = dataPRORWD.MaterialGroupID;
+                                                       dataPROMGR.GroupType = "REW";
+
+                                                       var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
+                                                       returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                         }
 
                                                     if (prodhdr.Slabs != null)
@@ -353,6 +362,7 @@ namespace SAPPromotion
                                                             countPRORWD++;
                                                             dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
                                                             dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
+                                                            dataPRORWD.MaterialNumber = null;
                                                             dataPRORWD.RewardValue = slabDataREW.discountvalue;
                                                             dataPRORWD.RewardPercentage = slabDataREW.discountrate;
                                                             dataPRORWD.RewardQty = slabDataREW.discountqty;

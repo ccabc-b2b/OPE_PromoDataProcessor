@@ -10,5 +10,6 @@ namespace SAPPromotion
         {
         public string MaterialGroup { get; set; }
         public string MaterialNumber { get; set; }
+        public string GroupType { get; set; }
         }
     }

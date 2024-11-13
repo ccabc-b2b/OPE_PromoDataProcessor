@@ -141,8 +141,8 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@ProductSegmentID", promotionRequirementDetailsdata.ProductSegmentID);
                 cmd.Parameters.AddWithValue("@RequirementQty ", promotionRequirementDetailsdata.RequirementQty);
                 cmd.Parameters.AddWithValue("@RequirementValue", promotionRequirementDetailsdata.RequirementValue);
-                cmd.Parameters.AddWithValue("@FromQTY", Convert.ToInt32(promotionRequirementDetailsdata.FromQTY));
-                cmd.Parameters.AddWithValue("@ToQTY", Convert.ToInt32(promotionRequirementDetailsdata.ToQTY));
+                cmd.Parameters.AddWithValue("@FromQTY", promotionRequirementDetailsdata.FromQTY);
+                cmd.Parameters.AddWithValue("@ToQTY", promotionRequirementDetailsdata.ToQTY);
                 DateTime dateTime;
                 if (DateTime.TryParseExact(promotionRequirementDetailsdata.ActiveFrom , "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dateTime))
                 {

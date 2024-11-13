@@ -205,7 +205,7 @@ namespace SAPPromotion
                 cmd.Parameters.AddWithValue("@RewardValue", promotionRewardDetailsdata.RewardValue);
                 cmd.Parameters.AddWithValue("@RewardPercentage", promotionRewardDetailsdata.RewardPercentage);
                 cmd.Parameters.AddWithValue("@DiscountType", promotionRewardDetailsdata.DiscountType);
-                cmd.Parameters.AddWithValue("@FreeGoodQTY", Convert.ToInt32(promotionRewardDetailsdata.FreeGoodQTY));
+                cmd.Parameters.AddWithValue("@FreeGoodQTY", promotionRewardDetailsdata.FreeGoodQTY);
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();

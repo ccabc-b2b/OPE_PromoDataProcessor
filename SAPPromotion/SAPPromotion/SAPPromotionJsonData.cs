@@ -325,7 +325,7 @@ namespace SAPPromotion
                                                             countPRORQD++;
                                                             dataPRORQD.RequirementId = slabDataREQ.itemn;
                                                             dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
-                                                            dataPRORQD.MaterialNumber = null;
+                                                            dataPRORQD.MaterialNumber = "NULL";
                                                             dataPRORQD.FromQTY = slabDataREQ.fromqty;
                                                             dataPRORQD.ToQTY = slabDataREQ.toqty;
                                                             dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
@@ -362,7 +362,7 @@ namespace SAPPromotion
                                                             countPRORWD++;
                                                             dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
                                                             dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
-                                                            dataPRORWD.MaterialNumber = null;
+                                                            dataPRORWD.MaterialNumber = "NULL";
                                                             dataPRORWD.RewardValue = slabDataREW.discountvalue;
                                                             dataPRORWD.RewardPercentage = slabDataREW.discountrate;
                                                             dataPRORWD.RewardQty = slabDataREW.discountqty;

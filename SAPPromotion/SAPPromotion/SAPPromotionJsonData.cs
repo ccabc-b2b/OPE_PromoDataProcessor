@@ -317,23 +317,6 @@ namespace SAPPromotion
 
                                                         returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
                                                     }
-
-                                                    if (prodhdr.Slabs != null)
-                                                        {
-                                                        foreach (var slabDataREQ in prodhdr.Slabs.REQ)
-                                                            {
-                                                            countPRORQD++;
-                                                            dataPRORQD.RequirementId = slabDataREQ.itemn;
-                                                            dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
-                                                            dataPRORQD.MaterialNumber = "NULL";
-                                                            dataPRORQD.FromQTY = slabDataREQ.fromqty;
-                                                            dataPRORQD.ToQTY = slabDataREQ.toqty;
-                                                            dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
-                                                            dataPRORQD.ActiveTo = slabDataREQ.activeto;
-                                                            var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
-                                                      
-                                                        }
-                                                    }
                                                 }
                                             }
 
@@ -354,24 +337,43 @@ namespace SAPPromotion
                                                        var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
                                                        returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                         }
+                                                    }
+                                            }
 
-                                                    if (prodhdr.Slabs != null)
-                                                        {
-                                                        foreach (var slabDataREW in prodhdr.Slabs.REW)
-                                                            {
-                                                            countPRORWD++;
-                                                            dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
-                                                            dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
-                                                            dataPRORWD.MaterialNumber = "NULL";
-                                                            dataPRORWD.RewardValue = slabDataREW.discountvalue;
-                                                            dataPRORWD.RewardPercentage = slabDataREW.discountrate;
-                                                            dataPRORWD.RewardQty = slabDataREW.discountqty;
-                                                            dataPRORWD.DiscountType = slabDataREW.discounttype;
-                                                            dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
-                                                            var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
-                                                            returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
-                                                            
-                                                        }
+                                        if (prodhdr.IsSlab != 0 && prodhdr.Slabs != null)
+                                            {
+                                            if (prodhdr.Slabs.REQ.Count != 0)
+                                                {
+                                                foreach (var slabDataREQ in prodhdr.Slabs.REQ)
+                                                    {
+                                                    countPRORQD++;
+                                                    var dataPRORQD = new SAPPromotionRequirementsDetailsEntity();
+                                                    dataPRORQD.RequirementId = slabDataREQ.itemn;
+                                                    dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
+                                                    dataPRORQD.MaterialNumber = "NULL";
+                                                    dataPRORQD.FromQTY = slabDataREQ.fromqty;
+                                                    dataPRORQD.ToQTY = slabDataREQ.toqty;
+                                                    dataPRORQD.ActiveFrom = slabDataREQ.activefrom;
+                                                    dataPRORQD.ActiveTo = slabDataREQ.activeto;
+                                                    var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
+                                                    }
+                                                }
+                                            if (prodhdr.Slabs.REW.Count != 0)
+                                                {
+                                                foreach (var slabDataREW in prodhdr.Slabs.REW)
+                                                    {
+                                                    countPRORWD++;
+                                                    var dataPRORWD = new SAPPromotionRewardDetailsEntity();
+                                                    dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
+                                                    dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
+                                                    dataPRORWD.MaterialNumber = "NULL";
+                                                    dataPRORWD.RewardValue = slabDataREW.discountvalue;
+                                                    dataPRORWD.RewardPercentage = slabDataREW.discountrate;
+                                                    dataPRORWD.RewardQty = slabDataREW.discountqty;
+                                                    dataPRORWD.DiscountType = slabDataREW.discounttype;
+                                                    dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
+                                                    var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
+                                                    returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                     }
                                                 }
                                             }

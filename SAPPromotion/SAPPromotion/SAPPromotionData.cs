@@ -98,7 +98,8 @@ namespace SAPPromotion
                 SqlCommand cmd = new SqlCommand("PromotionMaterialGroupMasterDetails_save", con);
                 cmd.CommandType = CommandType.StoredProcedure;               
                 cmd.Parameters.AddWithValue("@MaterialGroup", promotionMaterialGroupMasterDetailsdata.MaterialGroup);
-                cmd.Parameters.AddWithValue("@MaterialNumber ", promotionMaterialGroupMasterDetailsdata.MaterialNumber);             
+                cmd.Parameters.AddWithValue("@MaterialNumber ", promotionMaterialGroupMasterDetailsdata.MaterialNumber);
+                cmd.Parameters.AddWithValue("@GroupType ", promotionMaterialGroupMasterDetailsdata.GroupType);
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();

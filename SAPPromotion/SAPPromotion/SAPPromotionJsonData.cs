@@ -270,6 +270,7 @@ namespace SAPPromotion
                         int countPRORWD = 0;
                         int countCUGRIN = 0;
                         int countPROMST = 0;
+                        var rewardId = 1;
                         foreach (var promotiondata in promotionJsonEntities.payload)
                             {
                             var CUGRHD = promotiondata.CUGRHD;
@@ -361,7 +362,6 @@ namespace SAPPromotion
                                                 }
                                             if (prodhdr.Slabs.REW.Count != 0)
                                                 {
-                                                var rewardId = 1;
                                                 foreach (var slabDataREW in prodhdr.Slabs.REW)
                                                     {
                                                     countPRORWD++;

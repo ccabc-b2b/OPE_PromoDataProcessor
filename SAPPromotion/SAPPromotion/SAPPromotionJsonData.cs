@@ -364,7 +364,7 @@ namespace SAPPromotion
                                                     {
                                                     countPRORWD++;
                                                     var dataPRORWD = new SAPPromotionRewardDetailsEntity();
-                                                    dataPRORWD.RequirementQty_RWD = slabDataREW.itemn;
+                                                    dataPRORWD.RequirementId_RWD = slabDataREW.itemn;
                                                     dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
                                                     dataPRORWD.MaterialNumber = "NULL";
                                                     dataPRORWD.RewardValue = slabDataREW.discountvalue;

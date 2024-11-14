@@ -361,12 +361,13 @@ namespace SAPPromotion
                                                 }
                                             if (prodhdr.Slabs.REW.Count != 0)
                                                 {
+                                                var rewardId = 1;
                                                 foreach (var slabDataREW in prodhdr.Slabs.REW)
                                                     {
                                                     countPRORWD++;
                                                     var dataPRORWD = new SAPPromotionRewardDetailsEntity();
                                                     dataPRORWD.PromotionID = slabDataREW.deal;
-                                                    dataPRORWD.PromoRewardID = slabDataREW.itemn;
+                                                    dataPRORWD.PromoRewardID = rewardId.ToString();
                                                     dataPRORWD.RequirementId_RWD = slabDataREW.itemn;
                                                     dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
                                                     dataPRORWD.MaterialNumber = "NULL";
@@ -377,6 +378,7 @@ namespace SAPPromotion
                                                     dataPRORWD.FreeGoodQTY = slabDataREW.freegoodsqty;
                                                     var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
                                                     returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
+                                                    rewardId++;
                                                     }
                                                 }
                                             }

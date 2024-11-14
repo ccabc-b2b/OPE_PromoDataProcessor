@@ -348,6 +348,7 @@ namespace SAPPromotion
                                                     {
                                                     countPRORQD++;
                                                     var dataPRORQD = new SAPPromotionRequirementsDetailsEntity();
+                                                    dataPRORQD.PromotionID = slabDataREQ.deal;
                                                     dataPRORQD.RequirementId = slabDataREQ.itemn;
                                                     dataPRORQD.MaterialGroupID = slabDataREQ.reqmgroup;
                                                     dataPRORQD.MaterialNumber = "NULL";
@@ -364,6 +365,8 @@ namespace SAPPromotion
                                                     {
                                                     countPRORWD++;
                                                     var dataPRORWD = new SAPPromotionRewardDetailsEntity();
+                                                    dataPRORWD.PromotionID = slabDataREW.deal;
+                                                    dataPRORWD.PromoRewardID = slabDataREW.itemn;
                                                     dataPRORWD.RequirementId_RWD = slabDataREW.itemn;
                                                     dataPRORWD.MaterialGroupID = slabDataREW.rewmgroup;
                                                     dataPRORWD.MaterialNumber = "NULL";

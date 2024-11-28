@@ -90,6 +90,29 @@ namespace SAPPromotion
             }
         }
 
+        public void SaveIsDeletedPromotionMaster(string promo_id)
+            {
+            try
+                {
+                SqlConnection con = new SqlConnection(_configuration["DatabaseConnectionString"]);
+                SqlCommand cmd = new SqlCommand("UpdateIsDeletedPromotionMaster", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@PromotionID", promo_id);
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+                }
+            catch (Exception ex)
+                {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "Promotion";
+                errorLog.ParentNodeName = "UpdateIsDeletedPromotionMaster";
+                errorLog.ErrorMessage = ex.Message;
+                SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, ex.Message);              
+                }
+            }
         public int SavePromotionMaterialGroupMasterDetails(SAPPromotionMaterialGroupMasterDetails promotionMaterialGroupMasterDetailsdata)
         {
             try

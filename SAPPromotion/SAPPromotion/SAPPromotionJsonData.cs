@@ -6,7 +6,9 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 
 namespace SAPPromotion
@@ -84,6 +86,8 @@ namespace SAPPromotion
                         }
                     }
 
+                DeletePromotionId(blobList);
+
                 foreach (var blobDetails in blobList)
                     {
                     CheckRequiredFields(blobDetails, container);
@@ -113,6 +117,100 @@ namespace SAPPromotion
                 logger.ErrorLogData(ex, ex.Message);
                 }
             }
+
+        public List<string> FetchDDPromotionId()
+            {
+            string connectionString = _configuration["DatabaseConnectionString"];
+
+            List<string> db_promotionId = new List<string>();
+
+            string query = "select PromotionID from [dbo].[tbPromotionMasterDetails]";
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                SqlCommand command = new SqlCommand(query, connection);
+
+                try
+                    {
+                    connection.Open();
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                        while (reader.Read())
+                            {
+                            string columnValue = reader["PromotionID"].ToString();
+                            db_promotionId.Add(columnValue);
+                            }
+                        }
+                       
+                    }
+                catch (Exception ex)
+                    {                  
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                    }
+                }
+              return db_promotionId;
+            }
+
+        public void DeletePromotionId(List<SAPBlobEntity> blobList)
+        {
+            try
+            {
+                List<string> ingest_promotionId = new List<string>();
+                List<string> db_promotionId = FetchDDPromotionId();
+                List<string> errors = new List<string>();
+                foreach (var blobDetails in blobList)
+                {
+                    if (string.IsNullOrEmpty(blobDetails.FileData) == false)
+                    {
+                        SAPPromotion promotionJsonEntities = JsonConvert.DeserializeObject<SAPPromotion>(blobDetails.FileData, new JsonSerializerSettings
+                            {
+                            Error = delegate (object sender, ErrorEventArgs args)
+                                {
+                                    errors.Add(args.ErrorContext.Error.Message);
+                                    args.ErrorContext.Handled = true;
+
+                                },
+                            Converters = { new IsoDateTimeConverter()
+                            }
+                            });
+
+                        if (promotionJsonEntities != null)
+                        {
+                            foreach (var promotiondata in promotionJsonEntities.payload)
+                            {
+                                var PRODHDR = promotiondata.PRODHDR;
+                                foreach (var prodhdr in PRODHDR)
+                                {
+                                    if( string.IsNullOrEmpty(prodhdr.PromotionID ) == false)
+                                    {
+                                        ingest_promotionId.Add(prodhdr.PromotionID);
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+
+                var result = db_promotionId.Except(ingest_promotionId);
+                foreach (var item in result)
+                {
+                   
+                    promotionData.SaveIsDeletedPromotionMaster(item);    
+                   
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorLog = new SAPErrorLogEntity();
+                errorLog.PipeLineName = "DeletePromotionID";              
+                errorLog.ErrorMessage = ex.Message;
+                promotionData.SaveErrorLogData(errorLog);
+                Logger logger = new Logger(_configuration);
+                logger.ErrorLogData(ex, errorLog.ErrorMessage);
+            }
+        }
 
         public void CheckCustomerPromoRequiredFields(SAPBlobEntity blobDetails, CloudBlobContainer container)
             {

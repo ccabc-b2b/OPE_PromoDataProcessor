@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SAPPromotion
     {
@@ -157,8 +158,9 @@ namespace SAPPromotion
                         }
                     else
                         {
-                        foreach (var payload in customer_promotionJsonEntities.payload)
-                            {
+                        //foreach (var payload in customer_promotionJsonEntities.payload)
+                        Parallel.ForEach(customer_promotionJsonEntities.payload, payload =>
+                        {
                             if (payload.customerC == null)
                                 {
                                 returnData.Add("CustomerNumber is null", 0);
@@ -169,42 +171,78 @@ namespace SAPPromotion
                                 }
                             else
                                 {
-                                var dataTable = new DataTable();
-                                dataTable.Columns.Add("PromotionID");
-                                dataTable.Columns.Add("CustomerNumber");
-                                dataTable.Columns.Add("CustomerGrouping");
+                                //var dataTable = new DataTable();
+                                //dataTable.Columns.Add("PromotionID");
+                                //dataTable.Columns.Add("CustomerNumber");
+                                //dataTable.Columns.Add("CustomerGrouping");
 
-                                dataTable.Rows.Add(payload.dealNoC, payload.customerC, null);
+                                //dataTable.Rows.Add(payload.dealNoC, payload.customerC, null);
 
-                                dataTable.AcceptChanges();
-                                if (dataTable.Rows.Count > 0)
+                                //dataTable.AcceptChanges();
+                                //if (dataTable.Rows.Count > 0)
+                                //    {
+                                SAPCustomerPromotionDetailsEntity customerPromotionDetailsEntity= new SAPCustomerPromotionDetailsEntity();
+                                customerPromotionDetailsEntity.PromotionID = payload.dealNoC;
+                                customerPromotionDetailsEntity.CustomerNumber = payload.customerC;
+                                customerPromotionDetailsEntity.CustomerGrouping = payload.salesRouteC;
+                                var return_CustomerPromo = promotionData.SaveCustomerPromotionDetailsdata(customerPromotionDetailsEntity);
+                                if (!returnData.ContainsKey("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC))
                                     {
-                                    var return_CustomerPromo = promotionData.SaveCustomerPromotionDetailsdata(dataTable);
-                                    if (!returnData.ContainsKey("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC))
-                                        {
-                                        returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
-                                        }
+                                    returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
                                     }
+                                    //}
                                 }
-                            }
+                        }
+                        );
                         }
 
-                    foreach (var returnvalue in returnData)
+                    //foreach (var returnvalue in returnData)
+                    //    {
+                    //    if (returnvalue.Value == 0)
+                    //        {
+                    //        blobDetails.Status = "Error";
+                    //        var errorLog2 = new SAPErrorLogEntity();
+                    //        errorLog2.PipeLineName = "CustomerPromotion";
+                    //        errorLog2.FileName = blobDetails.FileName;
+                    //        errorLog2.ParentNodeName = returnvalue.Key;
+                    //        Logger logger = new Logger(_configuration);
+                    //        logger.ErrorLogData(null, errors[0]);
+                    //        //SaveErrorLogData(errorLog2);
+                    //        // break;
+                    //        }
+                    //    else
+                    //        {
+                    //        blobDetails.Status = "Success";
+                    //        }
+                    //    }
+
+
+                    bool hasError = returnData.Any(returnvalue => returnvalue.Value == 0);
+
+                    if (hasError)
                         {
-                        if (returnvalue.Value == 0)
+                        var errorEntries = returnData.Where(returnvalue => returnvalue.Value == 0);
+
+                        foreach (var entry in errorEntries)
                             {
-                            blobDetails.Status = "Error";
-                            var errorLog2 = new SAPErrorLogEntity();
-                            errorLog2.PipeLineName = "CustomerPromotion";
-                            errorLog2.FileName = blobDetails.FileName;
-                            errorLog2.ParentNodeName = returnvalue.Key;
-                            //SaveErrorLogData(errorLog2);
-                            // break;
+                            var errorLog2 = new SAPErrorLogEntity
+                                {
+                                PipeLineName = "CustomerPromotion",
+                                FileName = blobDetails.FileName,
+                                ParentNodeName = entry.Key
+                                };
+
+                            Logger logger = new Logger(_configuration);
+                            logger.ErrorLogData(null,"Error Found in file "+blobDetails.FileName);
+                            // Uncomment the following line if you want to save the error log data
+                            // SaveErrorLogData(errorLog2);
                             }
-                        else
-                            {
-                            blobDetails.Status = "Success";
-                            }
+
+                        blobDetails.Status = "Error";
+                        }
+                    else
+                        {
+                        blobDetails.Status = "Success";
                         }
                     }
                 var destDirectory = "source/process/customer-promotion/" + DateTime.Now.Year + "/" + DateTime.Now.Month + "/" + DateTime.Now.Day;

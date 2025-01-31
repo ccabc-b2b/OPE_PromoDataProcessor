@@ -181,7 +181,7 @@ namespace SAPPromotion
                                 //dataTable.AcceptChanges();
                                 //if (dataTable.Rows.Count > 0)
                                 //    {
-                                SAPCustomerPromotionDetailsEntity customerPromotionDetailsEntity= new SAPCustomerPromotionDetailsEntity();
+                                SAPCustomerPromotionDetailsEntity customerPromotionDetailsEntity = new SAPCustomerPromotionDetailsEntity();
                                 customerPromotionDetailsEntity.PromotionID = payload.dealNoC;
                                 customerPromotionDetailsEntity.CustomerNumber = payload.customerC;
                                 customerPromotionDetailsEntity.CustomerGrouping = payload.salesRouteC;
@@ -190,7 +190,7 @@ namespace SAPPromotion
                                     {
                                     returnData.Add("CustomerPromotion" + payload.customerC + "_" + payload.dealNoC, return_CustomerPromo);
                                     }
-                                    //}
+                                //}
                                 }
                         }
                         );
@@ -221,22 +221,22 @@ namespace SAPPromotion
 
                     if (hasError)
                         {
-                        var errorEntries = returnData.Where(returnvalue => returnvalue.Value == 0);
+                        //var errorEntries = returnData.Where(returnvalue => returnvalue.Value == 0);
 
-                        foreach (var entry in errorEntries)
-                            {
-                            var errorLog2 = new SAPErrorLogEntity
-                                {
-                                PipeLineName = "CustomerPromotion",
-                                FileName = blobDetails.FileName,
-                                ParentNodeName = entry.Key
-                                };
+                        //foreach (var entry in errorEntries)
+                        //    {
+                        //    var errorLog2 = new SAPErrorLogEntity
+                        //        {
+                        //        PipeLineName = "CustomerPromotion",
+                        //        FileName = blobDetails.FileName,
+                        //        ParentNodeName = entry.Key
+                        //        };
 
-                            Logger logger = new Logger(_configuration);
-                            logger.ErrorLogData(null,"Error Found in file "+blobDetails.FileName);
-                            // Uncomment the following line if you want to save the error log data
-                            // SaveErrorLogData(errorLog2);
-                            }
+                        Logger logger = new Logger(_configuration);
+                        logger.ErrorLogData(null, "Error Found in file " + blobDetails.FileName);
+                        // Uncomment the following line if you want to save the error log data
+                        // SaveErrorLogData(errorLog2);
+                        //}
 
                         blobDetails.Status = "Error";
                         }
@@ -339,44 +339,44 @@ namespace SAPPromotion
                                         var dataPROMGR = new SAPPromotionMaterialGroupMasterDetails();
 
                                         if (prodhdr.PRORQD != null && prodhdr.PRORQD.Count != 0)
-                                            {                                           
-                                                foreach (var dataPRORQD in prodhdr.PRORQD)
+                                            {
+                                            foreach (var dataPRORQD in prodhdr.PRORQD)
+                                                {
+                                                if (!string.IsNullOrEmpty(dataPRORQD.RequirementId))
                                                     {
-                                                    if (!string.IsNullOrEmpty(dataPRORQD.RequirementId))
-                                                        {
-                                                        countPRORQD++;
-                                                        dataPRORQD.PromotionID = prodhdr.PromotionID;
-                                                        var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
+                                                    countPRORQD++;
+                                                    dataPRORQD.PromotionID = prodhdr.PromotionID;
+                                                    var return_PRORQD = promotionData.SavePromotionRequirementDetailsdata(dataPRORQD);
 
-                                                        dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
-                                                        dataPROMGR.MaterialGroup = dataPRORQD.MaterialGroupID;
-                                                        dataPROMGR.GroupType = "REQ";
+                                                    dataPROMGR.MaterialNumber = dataPRORQD.MaterialNumber;
+                                                    dataPROMGR.MaterialGroup = dataPRORQD.MaterialGroupID;
+                                                    dataPROMGR.GroupType = "REQ";
 
-                                                        var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
+                                                    var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
 
-                                                        returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
+                                                    returnData.Add("PRORQD" + countPRORQD, return_PRORQD);
                                                     }
                                                 }
                                             }
 
                                         if (prodhdr.PRORWD != null && prodhdr.PRORWD.Count != 0)
-                                            {                                          
-                                                foreach (var dataPRORWD in prodhdr.PRORWD)
+                                            {
+                                            foreach (var dataPRORWD in prodhdr.PRORWD)
+                                                {
+                                                if (!string.IsNullOrEmpty(dataPRORWD.PromoRewardID))
                                                     {
-                                                    if (!string.IsNullOrEmpty(dataPRORWD.PromoRewardID))
-                                                        {
-                                                        countPRORWD++;
-                                                        dataPRORWD.PromotionID = prodhdr.PromotionID;
-                                                        var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
+                                                    countPRORWD++;
+                                                    dataPRORWD.PromotionID = prodhdr.PromotionID;
+                                                    var return_PRORWD = promotionData.SavePromotionRewardDetailsdata(dataPRORWD);
 
-                                                       dataPROMGR.MaterialNumber = dataPRORWD.MaterialNumber;
-                                                       dataPROMGR.MaterialGroup = dataPRORWD.MaterialGroupID;
-                                                       dataPROMGR.GroupType = "REW";
+                                                    dataPROMGR.MaterialNumber = dataPRORWD.MaterialNumber;
+                                                    dataPROMGR.MaterialGroup = dataPRORWD.MaterialGroupID;
+                                                    dataPROMGR.GroupType = "REW";
 
-                                                       var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
-                                                       returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
-                                                        }
+                                                    var return_promgr = promotionData.SavePromotionMaterialGroupMasterDetails(dataPROMGR);
+                                                    returnData.Add("PRORWD" + countPRORWD, return_PRORWD);
                                                     }
+                                                }
                                             }
 
                                         if (prodhdr.IsSlab != 0 && prodhdr.Slabs != null)

@@ -276,16 +276,15 @@ namespace SAPPromotion
                 return 0;
             }
         }
-        public int SaveCustomerPromotionDetailsdata(SAPCustomerPromotionDetailsEntity customerPromotionDetailsData)
+        public int SaveCustomerPromotionDetailsdata(DataTable customerPromotionDetailsData)
         {
             try
             {
                 SqlConnection con = new SqlConnection(_configuration["DatabaseConnectionString"]);
                 SqlCommand cmd = new SqlCommand("CustomerPromotionDetails_save", con);
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@PromotionID",customerPromotionDetailsData.PromotionID);
-                cmd.Parameters.AddWithValue("@CustomerNumber",customerPromotionDetailsData.CustomerNumber);
-                cmd.Parameters.AddWithValue("@CustomerGrouping",customerPromotionDetailsData.CustomerGrouping);
+                cmd.Parameters.AddWithValue("@CustomerPromotionDetailTableData", customerPromotionDetailsData);
+                cmd.Parameters.AddWithValue("@PromotionID", customerPromotionDetailsData.Rows[0].Field<string>(0));
                 cmd.Parameters.Add("@returnObj", SqlDbType.BigInt);
                 cmd.Parameters["@returnObj"].Direction = ParameterDirection.Output;
                 con.Open();
